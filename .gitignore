@@ -56,3 +56,6 @@ infra/freeswitch/storage/
 
 # TypeScript
 *.tsbuildinfo
+node_modules/
+.env
+*.pub
