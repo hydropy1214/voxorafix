@@ -25,16 +25,24 @@ export default function AudioFilesPage() {
       const form = new FormData()
       form.append('file', file)
       form.append('name', file.name.replace(/\.[^.]+$/, ''))
-      return api.post('/audio-files/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      return api.post('/audio-files/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['audio-files'] }); toast.success('Audio file uploaded') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['audio-files'] })
+      toast.success('Audio file uploaded')
+    },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Upload failed'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/audio-files/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['audio-files'] }); toast.success('File deleted') },
-    onError: () => toast.error('Failed to delete'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['audio-files'] })
+      toast.success('File deleted')
+    },
+    onError: () => toast.error('Failed to delete file'),
   })
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -49,7 +57,6 @@ export default function AudioFilesPage() {
 
   const togglePlay = (file: any) => {
     const streamUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/audio-files/${file.id}/stream`
-    const authToken = JSON.parse(localStorage.getItem('voxora-auth') || '{}')?.state?.accessToken
 
     if (playingId === file.id) {
       audioEl?.pause()
@@ -66,107 +73,153 @@ export default function AudioFilesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">Audio Files</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Upload and manage your broadcast audio</p>
+        <h1 className="page-title">Audio Files</h1>
+        <p className="page-subtitle">Upload and manage your broadcast audio messages</p>
       </div>
 
-      {/* Upload zone */}
+      {/* Upload dropzone */}
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all',
-          isDragActive ? 'border-brand-500 bg-brand-500/10' : 'border-border hover:border-brand-500/50',
+          'border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-200',
+          isDragActive
+            ? 'border-brand-500 bg-brand-500/[0.06] shadow-glow-brand/10'
+            : 'border-border hover:border-brand-500/40',
         )}
       >
         <input {...getInputProps()} />
-        {uploadMutation.isPending ? (
-          <Loader2 className="h-10 w-10 mx-auto mb-3 text-brand-400 animate-spin" />
-        ) : (
-          <Upload className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-        )}
-        <p className="font-medium mb-1">
-          {isDragActive ? 'Drop your audio here' : uploadMutation.isPending ? 'Uploading...' : 'Upload MP3 or WAV'}
+        <div className={cn(
+          'h-12 w-12 rounded-2xl flex items-center justify-center mx-auto mb-4',
+          isDragActive ? 'bg-brand-500/20' : 'bg-muted/50',
+        )}>
+          {uploadMutation.isPending ? (
+            <Loader2 className="h-6 w-6 text-brand-400 animate-spin" />
+          ) : (
+            <Upload className={cn('h-6 w-6', isDragActive ? 'text-brand-400' : 'text-muted-foreground')} />
+          )}
+        </div>
+        <p className="font-semibold text-sm">
+          {isDragActive
+            ? 'Drop your audio files here'
+            : uploadMutation.isPending
+            ? 'Uploading...'
+            : 'Upload MP3 or WAV'}
         </p>
-        <p className="text-xs text-muted-foreground">Drag & drop or click to browse. Max 50MB per file.</p>
+        <p className="text-xs text-muted-foreground mt-1.5">
+          Drag & drop or click to browse · Max 50 MB per file
+        </p>
       </div>
 
       {/* Files grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-card border border-border rounded-xl animate-pulse" />)}
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className={cn('h-32 rounded-2xl skeleton', i > 1 && 'opacity-50')} />
+          ))}
         </div>
       ) : files.length === 0 ? (
         <div className="text-center py-16">
-          <FileAudio className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <div className="h-16 w-16 rounded-2xl bg-muted/40 flex items-center justify-center mx-auto mb-4">
+            <FileAudio className="h-7 w-7 text-muted-foreground/40" />
+          </div>
           <p className="font-semibold text-lg mb-1">No audio files yet</p>
           <p className="text-muted-foreground text-sm">Upload MP3 or WAV files to use in campaigns</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {files.map((file: any) => (
-            <div key={file.id} className="bg-card border border-border rounded-xl p-4 hover:border-brand-500/30 transition-all">
-              <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-lg bg-brand-500/15 flex items-center justify-center flex-shrink-0">
-                  <FileAudio className="h-5 w-5 text-brand-400" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-sm truncate">{file.name}</p>
-                    <span className={cn('text-xs px-1.5 py-0.5 rounded-full border flex-shrink-0', getStatusColor(file.status))}>
-                      {file.status}
-                    </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {files.map((file: any) => {
+            const isPlaying = playingId === file.id
+            return (
+              <div
+                key={file.id}
+                className={cn(
+                  'bg-card border rounded-2xl p-4 transition-all duration-200',
+                  isPlaying
+                    ? 'border-brand-500/40 shadow-glow-brand/10'
+                    : 'border-border hover:border-brand-500/20',
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    'h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                    isPlaying ? 'bg-brand-500/20' : 'bg-brand-500/10',
+                  )}>
+                    <FileAudio className={cn(
+                      'h-5 w-5',
+                      isPlaying ? 'text-brand-300' : 'text-brand-400',
+                    )} />
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{file.format?.toUpperCase()}</span>
-                    <span>•</span>
-                    <span>{formatDuration(file.duration ?? 0)}</span>
-                    <span>•</span>
-                    <span>{formatFileSize(file.size)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(file.createdAt)}</p>
-                </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {file.status === 'READY' && (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-sm truncate">{file.name}</p>
+                      <span className={cn(
+                        'text-[10px] px-1.5 py-0.5 rounded-md border flex-shrink-0',
+                        getStatusColor(file.status),
+                      )}>
+                        {file.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>{file.format?.toUpperCase()}</span>
+                      <span>·</span>
+                      <span>{formatDuration(file.duration ?? 0)}</span>
+                      <span>·</span>
+                      <span>{formatFileSize(file.size)}</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">{timeAgo(file.createdAt)}</p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {file.status === 'READY' && (
+                      <button
+                        onClick={() => togglePlay(file)}
+                        className={cn(
+                          'p-2 rounded-xl border transition-all',
+                          isPlaying
+                            ? 'bg-brand-500/15 border-brand-500/30 text-brand-400'
+                            : 'border-border hover:bg-accent',
+                        )}
+                      >
+                        {isPlaying
+                          ? <Pause className="h-3.5 w-3.5" />
+                          : <Play className="h-3.5 w-3.5" />
+                        }
+                      </button>
+                    )}
                     <button
-                      onClick={() => togglePlay(file)}
-                      className="p-2 rounded-lg border border-border hover:bg-accent transition-all"
+                      onClick={() => deleteMutation.mutate(file.id)}
+                      className="p-2 rounded-xl border border-border hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all"
                     >
-                      {playingId === file.id ? (
-                        <Pause className="h-4 w-4 text-brand-400" />
-                      ) : (
-                        <Play className="h-4 w-4" />
-                      )}
+                      <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  )}
-                  <button
-                    onClick={() => deleteMutation.mutate(file.id)}
-                    className="p-2 rounded-lg border border-border hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-400 transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Waveform placeholder */}
-              {file.status === 'READY' && (
-                <div className="mt-3 h-8 bg-muted rounded-lg overflow-hidden">
-                  <div className="flex items-center h-full gap-px px-2">
-                    {[...Array(48)].map((_, i) => (
+                {/* Waveform visualization */}
+                {file.status === 'READY' && (
+                  <div className="mt-3 h-8 bg-muted/30 rounded-xl overflow-hidden px-2 flex items-center gap-px">
+                    {[...Array(52)].map((_, i) => (
                       <div
                         key={i}
-                        className={cn('w-1 rounded-full flex-shrink-0', playingId === file.id ? 'bg-brand-400' : 'bg-brand-500/40')}
-                        style={{ height: `${20 + Math.sin(i * 0.5) * 15 + Math.cos(i * 0.3) * 10}%` }}
+                        className={cn(
+                          'w-0.5 rounded-full flex-shrink-0 transition-colors',
+                          isPlaying ? 'bg-brand-400' : 'bg-brand-500/35',
+                        )}
+                        style={{
+                          height: `${25 + Math.sin(i * 0.4) * 18 + Math.cos(i * 0.25) * 12}%`,
+                          animationDelay: isPlaying ? `${i * 0.04}s` : '0s',
+                          animation: isPlaying ? 'wave 0.8s ease-in-out infinite alternate' : 'none',
+                        }}
                       />
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
