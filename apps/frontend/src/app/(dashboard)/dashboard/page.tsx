@@ -24,27 +24,31 @@ export default function DashboardPage() {
   })
 
   const { liveStats } = useLiveStats()
-
   const stats = analytics?.last30Days ?? {}
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Your campaign performance at a glance</p>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-subtitle">Campaign performance at a glance</p>
         </div>
         {liveStats?.activeCalls > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/30 rounded-full">
-            <div className="live-indicator" />
-            <span className="text-green-400 text-sm font-medium">{liveStats.activeCalls} active calls</span>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/25 rounded-full">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            <span className="text-green-400 text-xs font-semibold">
+              {liveStats.activeCalls} active {liveStats.activeCalls === 1 ? 'call' : 'calls'}
+            </span>
           </div>
         )}
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Primary stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
           title="Active Campaigns"
           value={analytics?.activeCampaigns ?? 0}
@@ -61,14 +65,14 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Answer Rate"
-          value={`${stats.answerRate?.toFixed(1) ?? 0}%`}
+          value={`${stats.answerRate?.toFixed(1) ?? '0.0'}%`}
           icon={TrendingUp}
           subtitle="Last 30 days"
           color="green"
         />
         <StatsCard
           title="Human Answers"
-          value={`${stats.humanRate?.toFixed(1) ?? 0}%`}
+          value={`${stats.humanRate?.toFixed(1) ?? '0.0'}%`}
           icon={Users}
           subtitle="Of answered calls"
           color="purple"
@@ -76,7 +80,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatsCard
           title="Active Calls"
           value={liveStats?.activeCalls ?? 0}
@@ -94,22 +98,22 @@ export default function DashboardPage() {
         />
         <StatsCard
           title="Voicemail Rate"
-          value={`${stats.machineRate?.toFixed(1) ?? 0}%`}
+          value={`${stats.machineRate?.toFixed(1) ?? '0.0'}%`}
           icon={Zap}
           color="yellow"
           compact
         />
         <StatsCard
           title="Failure Rate"
-          value={`${stats.failureRate?.toFixed(1) ?? 0}%`}
+          value={`${stats.failureRate?.toFixed(1) ?? '0.0'}%`}
           icon={AlertCircle}
           color="red"
           compact
         />
       </div>
 
-      {/* Charts & Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts & Live Widgets */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <CallsChart data={timelineData ?? []} loading={isLoading} />
         </div>

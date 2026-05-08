@@ -5,18 +5,19 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
 
-const schema = z.object({ email: z.string().email('Invalid email') })
+const schema = z.object({ email: z.string().email('Please enter a valid email') })
 type FormData = z.infer<typeof schema>
 
 export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [sentEmail, setSentEmail] = useState('')
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -24,9 +25,10 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     try {
       await api.post('/auth/forgot-password', data)
+      setSentEmail(data.email)
       setSent(true)
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Something went wrong')
+      toast.error(err.response?.data?.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -34,54 +36,93 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="space-y-6 text-center">
-        <div className="flex justify-center">
-          <div className="h-16 w-16 rounded-full bg-green-500/20 flex items-center justify-center">
-            <CheckCircle2 className="h-8 w-8 text-green-400" />
+      <div className="animate-fade-in space-y-6">
+        <div className="glass-card-strong rounded-2xl p-8 border border-white/[0.06] shadow-modal text-center">
+          <div className="flex justify-center mb-5">
+            <div className="h-16 w-16 rounded-2xl bg-green-500/15 border border-green-500/20 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-400" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Check your inbox</h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            We sent a password reset link to{' '}
+            <span className="text-foreground font-medium">{sentEmail}</span>.
+            It will expire in 1 hour.
+          </p>
+
+          <div className="mt-6 p-3 bg-muted/30 rounded-xl text-xs text-muted-foreground">
+            Didn&apos;t receive it? Check your spam folder or{' '}
+            <button
+              onClick={() => setSent(false)}
+              className="text-brand-400 hover:text-brand-300 transition-colors"
+            >
+              try again
+            </button>
           </div>
         </div>
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">Check your email</h2>
-          <p className="text-muted-foreground">We&apos;ve sent password reset instructions to your email address.</p>
-        </div>
-        <Link href="/login" className="inline-flex items-center gap-2 text-brand-400 hover:text-brand-300 text-sm">
-          <ArrowLeft className="h-4 w-4" /> Back to login
+
+        <Link
+          href="/login"
+          className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to sign in
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">Forgot password?</h2>
-        <p className="text-muted-foreground">Enter your email to receive reset instructions.</p>
+    <div className="animate-fade-in">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold tracking-tight">Reset your password</h2>
+        <p className="text-muted-foreground text-sm mt-1.5">
+          Enter your email and we&apos;ll send you a reset link.
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Email</label>
-          <input
-            {...register('email')}
-            type="email"
-            placeholder="you@example.com"
-            className="w-full px-3 py-2.5 rounded-lg bg-card border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-brand-500 transition-all"
-          />
-          {errors.email && <p className="text-red-400 text-xs">{errors.email.message}</p>}
-        </div>
+      <div className="glass-card-strong rounded-2xl p-6 border border-white/[0.06] shadow-modal">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground/90" htmlFor="email">
+              Email address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                {...register('email')}
+                id="email"
+                type="email"
+                placeholder="you@company.com"
+                className="input-field pl-10"
+                autoFocus
+              />
+            </div>
+            {errors.email && (
+              <p className="text-red-400 text-xs">{errors.email.message}</p>
+            )}
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2.5 px-4 gradient-brand rounded-lg font-medium text-white hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-        >
-          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-          Send Reset Link
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary w-full flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Send Reset Link'
+            )}
+          </button>
+        </form>
+      </div>
 
-      <Link href="/login" className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm transition-colors">
-        <ArrowLeft className="h-4 w-4" /> Back to login
+      <Link
+        href="/login"
+        className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mt-6"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to sign in
       </Link>
     </div>
   )

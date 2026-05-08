@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Signal } from 'lucide-react'
 import { api } from '@/lib/api'
 import { getMosColor, getMosLabel } from '@/lib/utils'
-import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts'
+import { cn } from '@/lib/utils'
 
 export function RtpQualityWidget() {
   const { data } = useQuery({
@@ -16,43 +16,74 @@ export function RtpQualityWidget() {
   const mos = data?.avgMos ?? 0
   const mosPercent = Math.min(100, (mos / 5) * 100)
 
+  const getBarColor = (mos: number) => {
+    if (mos >= 4.0) return 'bg-green-500'
+    if (mos >= 3.5) return 'bg-yellow-500'
+    return 'bg-red-500'
+  }
+
   return (
     <div className="stat-card">
-      <div className="flex items-center gap-2 mb-3">
-        <Signal className="h-4 w-4 text-brand-400" />
-        <h3 className="font-semibold text-sm">RTP Quality</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <div className="h-7 w-7 rounded-lg bg-brand-500/10 flex items-center justify-center">
+          <Signal className="h-3.5 w-3.5 text-brand-400" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-[13px] leading-none">RTP Quality</h3>
+          <p className="text-[10px] text-muted-foreground mt-0.5">MOS Score (0–5)</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative w-20 h-20">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadialBarChart innerRadius="65%" outerRadius="100%" data={[{ value: mosPercent }]} startAngle={90} endAngle={-270}>
-              <RadialBar dataKey="value" cornerRadius={4} fill={mos >= 4 ? '#22c55e' : mos >= 3.5 ? '#eab308' : '#ef4444'} background={{ fill: 'rgba(255,255,255,0.05)' }} />
-            </RadialBarChart>
-          </ResponsiveContainer>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className={`text-lg font-bold ${getMosColor(mos)}`}>{mos}</span>
+      {/* MOS Score display */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative">
+          <div className={cn('text-4xl font-bold tabular-nums', getMosColor(mos))}>
+            {mos > 0 ? mos.toFixed(1) : '—'}
           </div>
+          <p className={cn('text-xs font-medium mt-0.5', getMosColor(mos))}>
+            {mos > 0 ? getMosLabel(mos) : 'No data'}
+          </p>
         </div>
 
-        <div className="space-y-1.5 flex-1">
-          <div>
-            <p className={`text-sm font-semibold ${getMosColor(mos)}`}>{getMosLabel(mos)}</p>
-            <p className="text-xs text-muted-foreground">MOS Score</p>
-          </div>
-          <div className="space-y-1">
-            {[
-              { label: 'Excellent', value: data?.excellentCalls ?? 0, color: 'bg-green-400' },
-              { label: 'Good', value: data?.goodCalls ?? 0, color: 'bg-yellow-400' },
-              { label: 'Poor', value: data?.poorCalls ?? 0, color: 'bg-red-400' },
-            ].map(row => (
-              <div key={row.label} className="flex items-center gap-2 text-xs">
-                <div className={`h-1.5 w-1.5 rounded-full ${row.color}`} />
-                <span className="text-muted-foreground">{row.label}:</span>
-                <span className="font-medium">{row.value}</span>
+        {/* Bar chart */}
+        <div className="flex-1 space-y-1.5">
+          {[
+            { label: 'Excellent', value: data?.excellentCalls ?? 0, color: 'bg-green-500', threshold: '≥4.0' },
+            { label: 'Good', value: data?.goodCalls ?? 0, color: 'bg-yellow-500', threshold: '3.5–4.0' },
+            { label: 'Poor', value: data?.poorCalls ?? 0, color: 'bg-red-500', threshold: '<3.5' },
+          ].map(row => {
+            const total = (data?.excellentCalls ?? 0) + (data?.goodCalls ?? 0) + (data?.poorCalls ?? 0)
+            const pct = total > 0 ? (row.value / total) * 100 : 0
+            return (
+              <div key={row.label}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] text-muted-foreground">{row.label}</span>
+                  <span className="text-[10px] font-medium tabular-nums">{row.value}</span>
+                </div>
+                <div className="h-1 bg-muted/50 rounded-full overflow-hidden">
+                  <div
+                    className={cn('h-full rounded-full transition-all duration-700', row.color)}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </div>
-            ))}
-          </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* MOS progress arc (simplified as a progress bar) */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>0</span>
+          <span>Average MOS</span>
+          <span>5.0</span>
+        </div>
+        <div className="h-1.5 bg-muted/50 rounded-full overflow-hidden">
+          <div
+            className={cn('h-full rounded-full transition-all duration-700', getBarColor(mos))}
+            style={{ width: `${mosPercent}%` }}
+          />
         </div>
       </div>
     </div>

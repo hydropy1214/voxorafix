@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 
-=======
 # Voxora — Cloud SIP Voice Broadcasting Platform
 
 > Enterprise-grade outbound SIP voice broadcasting. Direct SIP protocol. No telecom APIs.
@@ -325,4 +323,3 @@ docker compose exec backend npx prisma migrate deploy
 ## License
 
 MIT © Voxora
->>>>>>> 2cc36b6 (feat: add Voxora SIP voice broadcasting platform (#2))
