@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Megaphone, Users, FileAudio, Wifi,
   Activity, Mic, BarChart3, CreditCard, Settings, Waves, ChevronRight,
+  ShieldCheck, Key,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -41,6 +42,7 @@ const NAV_ITEMS = [
   {
     label: 'Account',
     items: [
+      { href: '/compliance', label: 'Compliance', icon: ShieldCheck },
       { href: '/billing', label: 'Billing', icon: CreditCard },
       { href: '/settings', label: 'Settings', icon: Settings },
     ],

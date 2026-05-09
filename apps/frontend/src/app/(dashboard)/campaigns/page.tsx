@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { formatNumber, getStatusColor } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
-import { CreateCampaignModal } from '@/components/campaigns/CreateCampaignModal'
+import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 
 export default function CampaignsPage() {
   const [showCreate, setShowCreate] = useState(false)
@@ -119,7 +119,7 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {showCreate && <CreateCampaignModal onClose={() => setShowCreate(false)} />}
+      {showCreate && <CampaignWizard onClose={() => setShowCreate(false)} />}
     </div>
   )
 }
