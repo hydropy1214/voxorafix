@@ -158,7 +158,7 @@ export class FreeswitchEslService implements OnModuleInit, OnModuleDestroy {
     gateway: string;
     callerIdNumber?: string;
     callerIdName?: string;
-    campaignId: string;
+    campaignId?: string;
     audioFile?: string;
     voicemailAudio?: string;
     amdEnabled?: boolean;
@@ -166,10 +166,10 @@ export class FreeswitchEslService implements OnModuleInit, OnModuleDestroy {
     timeout?: number;
   }): Promise<{ uuid: string }> {
     const timeout = params.timeout ?? 60;
-    const callerId = `${params.callerIdName || 'Voxora'} <${params.callerIdNumber || 'unknown'}>`;
+    const cid = params.campaignId ?? '';
 
     const channelVars = [
-      `voxora_campaign_id=${params.campaignId}`,
+      `voxora_campaign_id=${cid}`,
       `voxora_audio_file=${params.audioFile || ''}`,
       `voxora_voicemail_audio=${params.voicemailAudio || ''}`,
       `voxora_amd_action=${params.amdAction || 'PLAY_ON_HUMAN'}`,

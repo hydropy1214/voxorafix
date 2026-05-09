@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FreeswitchEslService } from './freeswitch-esl.service';
 
@@ -10,6 +10,7 @@ export class SipService {
   constructor(
     private prisma: PrismaService,
     private esl: FreeswitchEslService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async originate(params: {
@@ -19,7 +20,7 @@ export class SipService {
     callerIdName?: string;
     audioFile?: string;
     voicemailAudio?: string;
-    campaignId: string;
+    campaignId?: string;
     amdEnabled?: boolean;
     amdAction?: string;
     timeout?: number;
@@ -27,17 +28,21 @@ export class SipService {
     return this.esl.originate(params);
   }
 
+  /**
+   * Campaign calls are finalized inside CampaignProcessor after originate().
+   * Quick-dial calls have no campaign — finalize hangup here only.
+   */
   @OnEvent('freeswitch.channel_hangup_complete')
   async handleCallHangup(payload: {
     uuid: string;
-    campaignId: string;
+    campaignId?: string;
     hangupCause: string;
     duration: number;
     amdResult?: string;
     rtpPacketsLost?: string;
     rtpMos?: number;
   }) {
-    if (!payload.uuid || !payload.campaignId) return;
+    if (!payload.uuid) return;
 
     const callLog = await this.prisma.callLog.findFirst({
       where: { uuid: payload.uuid },
@@ -45,14 +50,16 @@ export class SipService {
 
     if (!callLog) return;
 
+    if (callLog.campaignId) {
+      return;
+    }
+
     const isAnswered = !['USER_BUSY', 'NO_ANSWER', 'NO_USER_RESPONSE', 'NORMAL_TEMPORARY_FAILURE'].includes(
       payload.hangupCause,
-    );
+    ) && payload.duration > 0;
     const isBusy = payload.hangupCause === 'USER_BUSY';
     const isNoAnswer = ['NO_ANSWER', 'NO_USER_RESPONSE'].includes(payload.hangupCause);
     const status = isAnswered ? 'COMPLETED' : isBusy ? 'BUSY' : isNoAnswer ? 'NOANSWER' : 'FAILED';
-    const isHuman = payload.amdResult === 'HUMAN';
-    const isMachine = payload.amdResult === 'MACHINE';
 
     await this.prisma.callLog.update({
       where: { id: callLog.id },
@@ -64,34 +71,22 @@ export class SipService {
         billableDuration: payload.duration,
         amdResult: payload.amdResult as any,
         rtpMos: payload.rtpMos,
-        rtpPacketsLost: payload.rtpPacketsLost ? parseInt(payload.rtpPacketsLost) : undefined,
+        rtpPacketsLost: payload.rtpPacketsLost ? parseInt(payload.rtpPacketsLost, 10) : undefined,
       },
     });
 
-    // Update campaign stats
-    const updates: any = {
-      activeCalls: { decrement: 1 },
-    };
-
-    if (isAnswered) {
-      updates.answeredCalls = { increment: 1 };
-      updates.totalDuration = { increment: payload.duration };
-      if (isHuman) updates.humanAnswers = { increment: 1 };
-      if (isMachine) updates.machineAnswers = { increment: 1 };
-    } else if (isBusy) {
-      updates.busyCalls = { increment: 1 };
-    } else if (isNoAnswer) {
-      updates.noanswer = { increment: 1 };
-    } else {
-      updates.failedCalls = { increment: 1 };
-    }
-
-    await this.prisma.campaign.update({
-      where: { id: payload.campaignId },
-      data: updates,
+    this.eventEmitter.emit('call.completed', {
+      userId: callLog.userId,
+      campaignId: null,
+      uuid: payload.uuid,
+      phone: callLog.phone,
+      duration: payload.duration,
+      amdResult: payload.amdResult,
+      status,
+      hangupCause: payload.hangupCause,
     });
 
-    this.logger.debug(`Call ${payload.uuid} completed: ${payload.hangupCause} (${payload.duration}s)`);
+    this.logger.debug(`Quick-dial ${payload.uuid} completed: ${payload.hangupCause} (${payload.duration}s)`);
   }
 
   @OnEvent('freeswitch.channel_answer')

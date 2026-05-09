@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
+import { QuickCallDto } from './dto/quick-call.dto';
 
 @ApiTags('Campaigns')
 @ApiBearerAuth()
@@ -25,6 +26,18 @@ export class CampaignsController {
   @ApiOperation({ summary: 'List campaigns' })
   findAll(@Req() req, @Query('page') page = 1, @Query('limit') limit = 20) {
     return this.service.findAll(req.user.id, +page, +limit);
+  }
+
+  @Post('quick-call')
+  @ApiOperation({ summary: 'Web dialer — place one outbound call via your registered SIP account' })
+  quickCall(@Req() req: any, @Body() dto: QuickCallDto) {
+    return this.service.quickCall(req.user.id, dto);
+  }
+
+  @Post('hangup/:uuid')
+  @ApiOperation({ summary: 'Hang up an in-progress outbound call by FreeSWITCH UUID' })
+  hangup(@Req() req: any, @Param('uuid') uuid: string) {
+    return this.service.hangupCall(req.user.id, uuid);
   }
 
   @Get(':id')

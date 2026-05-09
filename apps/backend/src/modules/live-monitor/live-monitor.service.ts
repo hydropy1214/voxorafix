@@ -23,12 +23,12 @@ export class LiveMonitorService {
       }),
       this.prisma.callLog.count({
         where: {
-          campaign: { userId },
+          userId,
           status: { in: ['DIALING', 'RINGING', 'ANSWERED'] },
         },
       }),
       this.prisma.callLog.findMany({
-        where: { campaign: { userId } },
+        where: { userId },
         take: 10,
         orderBy: { createdAt: 'desc' },
         select: {
@@ -75,7 +75,7 @@ export class LiveMonitorService {
   async getRtpMetrics(userId: string) {
     const recent = await this.prisma.callLog.findMany({
       where: {
-        campaign: { userId },
+        userId,
         rtpMos: { not: null },
         createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }, // Last hour
       },

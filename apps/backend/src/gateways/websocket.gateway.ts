@@ -128,28 +128,48 @@ export class WebsocketGateway
       type: 'call:dialing',
       uuid: payload.uuid,
       phone: payload.phone,
-      campaignId: payload.campaignId,
+      campaignId: payload.campaignId ?? null,
       timestamp: now(),
     }
-    this.toRoom(`campaign:${payload.campaignId}`, 'call:dialing', ev)
+    if (payload.campaignId) {
+      this.toRoom(`campaign:${payload.campaignId}`, 'call:dialing', ev)
+    }
+    if (payload.userId) {
+      this.emitToUser(payload.userId, 'call:update', ev)
+    }
     this.toRoom('live-monitor', 'call:update', ev)
   }
 
   @OnEvent('call.answered.live')
   @OnEvent('freeswitch.channel_answer')
-  handleCallAnswered(payload: any) {
+  async handleCallAnswered(payload: any) {
+    let userId = payload.userId as string | undefined
+    let campaignId = payload.campaignId as string | undefined
+    let phone = payload.phone as string | undefined
+
+    if ((!userId || !phone || !campaignId) && payload.uuid) {
+      const row = await this.resolveCallParty(payload.uuid)
+      userId = userId || row.userId
+      campaignId = campaignId || row.campaignId
+      phone = phone || row.phone
+    }
+
     const ev = {
       type: 'call:answered',
       uuid: payload.uuid,
-      phone: payload.phone,
-      campaignId: payload.campaignId,
+      phone,
+      campaignId: campaignId ?? null,
       amdResult: payload.amdResult,
       timestamp: now(),
     }
-    if (payload.campaignId) {
-      this.toRoom(`campaign:${payload.campaignId}`, 'call:answered', ev)
-      this.toRoom('live-monitor', 'call:update', ev)
+
+    if (campaignId) {
+      this.toRoom(`campaign:${campaignId}`, 'call:answered', ev)
     }
+    if (userId) {
+      this.emitToUser(userId, 'call:update', ev)
+    }
+    this.toRoom('live-monitor', 'call:update', ev)
   }
 
   @OnEvent('call.completed')
@@ -161,17 +181,31 @@ export class WebsocketGateway
     }
     if (payload.campaignId) {
       this.toRoom(`campaign:${payload.campaignId}`, 'call:completed', ev)
-      this.toRoom('live-monitor', 'call:update', ev)
     }
+    if (payload.userId) {
+      this.emitToUser(payload.userId, 'call:update', ev)
+    }
+    this.toRoom('live-monitor', 'call:update', ev)
   }
 
   @OnEvent('freeswitch.channel_hangup_complete')
-  handleCallHangup(payload: any) {
+  async handleCallHangup(payload: any) {
+    let userId = payload.userId as string | undefined
+    let campaignId = payload.campaignId as string | undefined
+    let phone = payload.phone as string | undefined
+
+    if ((!userId || !phone || !campaignId) && payload.uuid) {
+      const row = await this.resolveCallParty(payload.uuid)
+      userId = userId || row.userId
+      campaignId = campaignId || row.campaignId
+      phone = phone || row.phone
+    }
+
     const ev = {
       type: 'call:hangup',
       uuid: payload.uuid,
-      campaignId: payload.campaignId,
-      phone: payload.phone,
+      phone,
+      campaignId: campaignId ?? null,
       hangupCause: payload.hangupCause,
       hangupMessage: this.describeHangupCause(payload.hangupCause),
       duration: payload.duration,
@@ -179,17 +213,21 @@ export class WebsocketGateway
       rtpMos: payload.rtpMos,
       timestamp: now(),
     }
-    if (payload.campaignId) {
-      this.toRoom(`campaign:${payload.campaignId}`, 'call:hangup', ev)
-      this.toRoom('live-monitor', 'call:update', ev)
+
+    if (campaignId) {
+      this.toRoom(`campaign:${campaignId}`, 'call:hangup', ev)
     }
+    if (userId) {
+      this.emitToUser(userId, 'call:update', ev)
+    }
+    this.toRoom('live-monitor', 'call:update', ev)
   }
 
   @OnEvent('call.sip_error')
   handleSipError(payload: any) {
     const ev = {
       type: 'sip:error',
-      campaignId: payload.campaignId,
+      campaignId: payload.campaignId ?? null,
       phone: payload.phone,
       error: payload.error,
       code: payload.code,
@@ -199,8 +237,11 @@ export class WebsocketGateway
     }
     if (payload.campaignId) {
       this.toRoom(`campaign:${payload.campaignId}`, 'sip:error', ev)
-      this.toRoom('live-monitor', 'sip:error', ev)
     }
+    if (payload.userId) {
+      this.emitToUser(payload.userId, 'call:update', ev)
+    }
+    this.toRoom('live-monitor', 'sip:error', ev)
     this.logger.warn(`SIP Error [${payload.code}] for ${payload.phone}: ${payload.error}`)
   }
 
@@ -223,6 +264,19 @@ export class WebsocketGateway
   }
 
   // ─── Utilities ────────────────────────────────────────────────────────────
+
+  private async resolveCallParty(uuid: string): Promise<{ userId?: string; campaignId?: string; phone?: string }> {
+    const row = await this.prisma.callLog.findFirst({
+      where: { uuid },
+      select: { userId: true, campaignId: true, phone: true },
+    })
+    if (!row) return {}
+    return {
+      userId: row.userId,
+      campaignId: row.campaignId ?? undefined,
+      phone: row.phone,
+    }
+  }
 
   private toRoom(room: string, event: string, data: any) {
     this.server?.to(room).emit(event, data)

@@ -43,8 +43,6 @@ export class CampaignProcessor {
   private readonly activeWorkers = new Map<string, boolean>();
   // Track pending call completions: uuid → resolve function
   private readonly pendingCalls = new Map<string, (result: any) => void>();
-  // Track call log IDs for hangup event lookup: uuid → callLogId
-  private readonly uuidToCallLog = new Map<string, string>();
 
   constructor(
     private prisma: PrismaService,
@@ -184,6 +182,7 @@ export class CampaignProcessor {
 
     const callLog = await this.prisma.callLog.create({
       data: {
+        userId: campaign.userId,
         campaignId,
         contactId: contact.id,
         phone,
@@ -215,21 +214,25 @@ export class CampaignProcessor {
         data: { uuid, status: 'RINGING' },
       });
 
-      this.uuidToCallLog.set(uuid, callLog.id);
-
       await this.prisma.campaign.update({
         where: { id: campaignId },
         data: { processedContacts: { increment: 1 }, activeCalls: { increment: 1 } },
       });
 
       // Emit live event to WebSocket clients
-      this.eventEmitter.emit('call.dialing', { campaignId, uuid, phone, callLogId: callLog.id });
+      this.eventEmitter.emit('call.dialing', {
+        campaignId,
+        uuid,
+        phone,
+        callLogId: callLog.id,
+        userId: campaign.userId,
+      });
 
       // Wait for CHANNEL_HANGUP_COMPLETE (or timeout after 2 minutes)
       const hangupResult = await this.waitForHangup(uuid, 120_000);
 
       if (hangupResult) {
-        await this.processHangup(callLog.id, campaignId, hangupResult);
+        await this.processHangup(callLog.id, hangupResult);
       } else {
         // Timed out — mark as no-answer
         await this.prisma.callLog.update({
@@ -259,13 +262,14 @@ export class CampaignProcessor {
       // Emit SIP error event to frontend in real-time
       this.eventEmitter.emit('call.sip_error', {
         campaignId,
+        userId: campaign.userId,
         phone,
         error: errorMsg,
         code: this.extractSipCode(err.message),
         callLogId: callLog.id,
       });
     } finally {
-      this.uuidToCallLog.delete(callLog.id);
+      /* pendingCalls cleared in onHangupComplete */
     }
   }
 
@@ -287,9 +291,13 @@ export class CampaignProcessor {
 
   // ─── Process hangup result ────────────────────────────────────────────────
 
-  private async processHangup(callLogId: string, campaignId: string, payload: any) {
+  private async processHangup(callLogId: string, payload: any) {
+    const row = await this.prisma.callLog.findUnique({ where: { id: callLogId } });
+    if (!row) return;
+
+    const campaignId = row.campaignId;
     const cause = payload.hangupCause || 'UNKNOWN';
-    const duration = Math.max(0, parseInt(payload.duration || '0'));
+    const duration = Math.max(0, parseInt(payload.duration || '0', 10));
     const amdResult = payload.amdResult;
 
     const isAnswered = !['USER_BUSY', 'NO_ANSWER', 'NO_USER_RESPONSE',
@@ -304,7 +312,7 @@ export class CampaignProcessor {
     const isMachine = amdResult === 'MACHINE';
 
     const mosScore = parseFloat(payload.rtpMos || '0') || null;
-    const jitter = parseInt(payload.rtpJitter || '0') || null;
+    const jitter = parseInt(payload.rtpJitter || '0', 10) || null;
 
     await this.prisma.callLog.update({
       where: { id: callLogId },
@@ -321,26 +329,36 @@ export class CampaignProcessor {
       },
     });
 
-    const updates: any = { activeCalls: { decrement: 1 } };
-    if (isAnswered) {
-      updates.answeredCalls = { increment: 1 };
-      updates.totalDuration = { increment: duration };
-      if (isHuman) updates.humanAnswers = { increment: 1 };
-      if (isMachine) updates.machineAnswers = { increment: 1 };
-    } else if (isBusy) {
-      updates.busyCalls = { increment: 1 };
-    } else if (isNoAnswer) {
-      updates.noanswer = { increment: 1 };
-    } else {
-      updates.failedCalls = { increment: 1 };
-    }
+    if (campaignId) {
+      const updates: any = { activeCalls: { decrement: 1 } };
+      if (isAnswered) {
+        updates.answeredCalls = { increment: 1 };
+        updates.totalDuration = { increment: duration };
+        if (isHuman) updates.humanAnswers = { increment: 1 };
+        if (isMachine) updates.machineAnswers = { increment: 1 };
+      } else if (isBusy) {
+        updates.busyCalls = { increment: 1 };
+      } else if (isNoAnswer) {
+        updates.noanswer = { increment: 1 };
+      } else {
+        updates.failedCalls = { increment: 1 };
+      }
 
-    await this.prisma.campaign.update({ where: { id: campaignId }, data: updates });
+      await this.prisma.campaign.update({ where: { id: campaignId }, data: updates });
+    }
 
     // Emit to WebSocket for real-time dashboard update
     this.eventEmitter.emit('call.completed', {
-      campaignId, callLogId, status, cause, duration, amdResult,
-      mos: mosScore, human: isHuman, machine: isMachine,
+      campaignId,
+      userId: row.userId,
+      callLogId,
+      status,
+      cause,
+      duration,
+      amdResult,
+      mos: mosScore,
+      human: isHuman,
+      machine: isMachine,
     });
   }
 

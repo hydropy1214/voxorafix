@@ -17,6 +17,7 @@ import { LiveMonitorModule } from './modules/live-monitor/live-monitor.module';
 import { RecordingsModule } from './modules/recordings/recordings.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { BillingModule } from './modules/billing/billing.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { WebsocketGateway } from './gateways/websocket.gateway';
 import { SipServiceModule } from './services/sip/sip.module';
 import { HealthController } from './health.controller';
@@ -74,6 +75,7 @@ import { HealthController } from './health.controller';
     RecordingsModule,
     AnalyticsModule,
     BillingModule,
+    ReportsModule,
     SipServiceModule,
   ],
   controllers: [HealthController],

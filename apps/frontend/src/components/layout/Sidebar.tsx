@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Megaphone, Users, FileAudio, Wifi,
   Activity, Mic, BarChart3, CreditCard, Settings, Waves, ChevronRight,
-  ShieldCheck, Key,
+  ShieldCheck, ScrollText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth.store'
@@ -37,6 +37,7 @@ const NAV_ITEMS = [
     label: 'Insights',
     items: [
       { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+      { href: '/call-logs', label: 'Call logs', icon: ScrollText },
     ],
   },
   {

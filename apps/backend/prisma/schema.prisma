@@ -42,6 +42,7 @@ model User {
   contactLists      ContactList[]
   audioFiles        AudioFile[]
   campaigns         Campaign[]
+  callLogs          CallLog[]
   apiKeys           ApiKey[]
 
   @@index([email])
@@ -365,14 +366,19 @@ enum AmdAction {
 
 model CallLog {
   id              String    @id @default(uuid())
-  campaignId      String
-  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
 
   contactId       String?
   contact         Contact?  @relation(fields: [contactId], references: [id])
 
   uuid            String    @unique // FreeSWITCH UUID
   phone           String
+  contactDisplayName String? // quick-dial label / notes (optional)
+
   direction       String    @default("outbound")
 
   status          CallStatus
@@ -400,6 +406,7 @@ model CallLog {
   createdAt       DateTime  @default(now())
 
   @@index([campaignId])
+  @@index([userId])
   @@index([contactId])
   @@index([uuid])
   @@index([status])

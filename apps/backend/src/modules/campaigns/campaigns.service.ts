@@ -2,6 +2,9 @@ import {
   Injectable, NotFoundException, BadRequestException,
   ConflictException, Logger,
 } from '@nestjs/common';
+import { SipService } from '../../services/sip/sip.service';
+import { FreeswitchEslService } from '../../services/sip/freeswitch-esl.service';
+import { QuickCallDto } from './dto/quick-call.dto';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -17,6 +20,8 @@ export class CampaignsService {
     private prisma: PrismaService,
     @InjectQueue('campaign') private campaignQueue: Queue,
     private eventEmitter: EventEmitter2,
+    private sipService: SipService,
+    private esl: FreeswitchEslService,
   ) {}
 
   async create(userId: string, dto: CreateCampaignDto) {
@@ -192,5 +197,116 @@ export class CampaignsService {
     ]);
 
     return { data, total, page, pages: Math.ceil(total / limit) };
+  }
+
+  private normalizeDialNumber(raw: string): string {
+    const s = raw.trim();
+    if (!s) return '';
+    const plus = s.startsWith('+');
+    const digits = s.replace(/\D/g, '');
+    if (!digits) return '';
+    return plus ? `+${digits}` : digits;
+  }
+
+  private extractSipCode(raw: string): string | null {
+    const match = raw.match(/\b([4-6]\d{2})\b/);
+    return match ? match[1] : null;
+  }
+
+  async quickCall(userId: string, dto: QuickCallDto) {
+    const sip = await this.prisma.sipAccount.findFirst({
+      where: { id: dto.sipAccountId, userId, active: true },
+    });
+
+    if (!sip) throw new NotFoundException('Phone account not found');
+    if (sip.status !== 'REGISTERED') {
+      throw new BadRequestException('Phone account must be registered before placing calls');
+    }
+
+    const phone = this.normalizeDialNumber(dto.phone);
+    const digitLen = phone.replace(/\D/g, '').length;
+    if (digitLen < 7) {
+      throw new BadRequestException('Enter a valid destination number (at least 7 digits)');
+    }
+
+    const callerId = sip.callerIdNumber || undefined;
+
+    const callLog = await this.prisma.callLog.create({
+      data: {
+        userId,
+        campaignId: null,
+        phone,
+        direction: 'outbound',
+        status: 'DIALING',
+        uuid: `pending-quick-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        contactDisplayName: dto.contactName?.trim() || null,
+        startedAt: new Date(),
+      },
+    });
+
+    try {
+      const { uuid } = await this.sipService.originate({
+        destination: phone,
+        gateway: `${sip.username}@${sip.sipServer}`,
+        callerIdNumber: callerId,
+        callerIdName: sip.callerIdName || undefined,
+        campaignId: '',
+        amdEnabled: true,
+        amdAction: 'PLAY_ON_BOTH',
+        timeout: 90,
+      });
+
+      await this.prisma.callLog.update({
+        where: { id: callLog.id },
+        data: { uuid, status: 'RINGING' },
+      });
+
+      this.eventEmitter.emit('call.dialing', {
+        campaignId: null,
+        uuid,
+        phone,
+        callLogId: callLog.id,
+        userId,
+      });
+
+      return { uuid, callLogId: callLog.id };
+    } catch (err: any) {
+      const msg = (err.message || 'Could not place call').slice(0, 240);
+      await this.prisma.callLog.update({
+        where: { id: callLog.id },
+        data: { status: 'FAILED', hangupCause: msg, hangupAt: new Date() },
+      });
+
+      this.eventEmitter.emit('call.sip_error', {
+        campaignId: null,
+        userId,
+        phone,
+        error: msg,
+        code: this.extractSipCode(msg),
+        callLogId: callLog.id,
+      });
+
+      throw new BadRequestException(msg);
+    }
+  }
+
+  async hangupCall(userId: string, uuid: string) {
+    const log = await this.prisma.callLog.findFirst({
+      where: {
+        uuid,
+        userId,
+        status: { in: ['DIALING', 'RINGING', 'ANSWERED'] },
+      },
+    });
+
+    if (!log) throw new NotFoundException('No active call found for this reference');
+
+    try {
+      await this.esl.hangup(uuid);
+    } catch (err: any) {
+      this.logger.warn(`Hangup API error: ${err.message}`);
+    }
+
+    return { ok: true };
   }
 }

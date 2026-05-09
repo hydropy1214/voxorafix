@@ -57,12 +57,11 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     // Call lifecycle events — all push into shared store
     const callEvents = [
       'call:dialing', 'call:answered', 'call:hangup',
-      'call:completed', 'call:update', 'amd:human', 'amd:machine',
+      'call:completed', 'amd:human', 'amd:machine',
     ]
     callEvents.forEach(ev => {
       socket.on(ev, (event: any) => {
         pushEvent({ ...event, type: ev })
-        // Update active call count
         if (ev === 'call:answered') {
           updateStats({ activeCalls: (useSocketStore.getState().liveStats.activeCalls || 0) + 1 })
         }
@@ -70,6 +69,18 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
           updateStats({ activeCalls: Math.max(0, (useSocketStore.getState().liveStats.activeCalls || 1) - 1) })
         }
       })
+    })
+
+    // Unified envelope used for live-monitor + quick-dial (payload.type holds the phase)
+    socket.on('call:update', (event: any) => {
+      const innerType = event?.type || 'call:update'
+      pushEvent({ ...event, type: innerType })
+      if (innerType === 'call:answered') {
+        updateStats({ activeCalls: (useSocketStore.getState().liveStats.activeCalls || 0) + 1 })
+      }
+      if (innerType === 'call:hangup' || innerType === 'call:completed') {
+        updateStats({ activeCalls: Math.max(0, (useSocketStore.getState().liveStats.activeCalls || 1) - 1) })
+      }
     })
 
     // SIP errors — push event + show toast for critical

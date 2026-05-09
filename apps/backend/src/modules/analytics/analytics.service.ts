@@ -22,19 +22,19 @@ export class AnalyticsService {
       this.prisma.campaign.count({ where: { userId } }),
       this.prisma.callLog.count({
         where: {
-          campaign: { userId },
+          userId,
           createdAt: { gte: todayStart },
         },
       }),
       this.prisma.callLog.count({
         where: {
-          campaign: { userId },
+          userId,
           status: { in: ['DIALING', 'RINGING', 'ANSWERED'] },
         },
       }),
       this.prisma.callLog.findMany({
         where: {
-          campaign: { userId },
+          userId,
           createdAt: { gte: last30Days },
         },
         select: {
@@ -88,7 +88,7 @@ export class AnalyticsService {
     const start = dayjs().subtract(days, 'day').toDate();
 
     const calls = await this.prisma.callLog.findMany({
-      where: { campaign: { userId }, createdAt: { gte: start } },
+      where: { userId, createdAt: { gte: start } },
       select: { createdAt: true, status: true, amdResult: true, duration: true },
       orderBy: { createdAt: 'asc' },
     });
@@ -135,7 +135,7 @@ export class AnalyticsService {
   async getRtpStats(userId: string) {
     const calls = await this.prisma.callLog.findMany({
       where: {
-        campaign: { userId },
+        userId,
         rtpMos: { not: null },
         createdAt: { gte: dayjs().subtract(7, 'day').toDate() },
       },
@@ -160,7 +160,7 @@ export class AnalyticsService {
 
   async getRecentEvents(userId: string, limit = 10) {
     return this.prisma.callLog.findMany({
-      where: { campaign: { userId } },
+      where: { userId },
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
