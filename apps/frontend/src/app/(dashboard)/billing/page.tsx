@@ -33,7 +33,7 @@ export default function BillingPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        toast.error('Stripe not configured. Please set STRIPE_SECRET_KEY.')
+        toast.error('Payment processing not configured. Contact support to activate billing.')
       }
     },
     onError: (e: any) => toast.error(e.response?.data?.message || 'Checkout failed'),
@@ -193,7 +193,7 @@ export default function BillingPage() {
           <h3 className="font-semibold text-sm">Billing Information</h3>
         </div>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Billing is managed through Stripe. All plans include unlimited API access.
+          Billing is managed securely. All plans include unlimited API access.
           Invoices are sent monthly to your registered email address.
         </p>
 

@@ -10,7 +10,7 @@ const FEATURES = [
   { icon: Phone, label: 'Direct SIP Protocol', desc: 'No API middlemen — pure SIP/RTP' },
   { icon: Activity, label: 'Live Monitoring', desc: 'Real-time call status & MOS scoring' },
   { icon: Shield, label: 'AMD Detection', desc: 'Human vs. machine answering detection' },
-  { icon: Zap, label: 'Campaign Engine', desc: 'BullMQ-powered concurrent dialing' },
+  { icon: Zap, label: 'Intelligent Queue Engine', desc: 'Precise concurrency control and retry logic' },
 ]
 
 const STATS = [
@@ -106,7 +106,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative z-10 flex items-center gap-3 text-brand-400/60 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="flex h-1.5 w-1.5 rounded-full bg-green-400" />
-            <span>FreeSWITCH + Kamailio</span>
+            <span>Enterprise call infrastructure</span>
           </div>
           <span>·</span>
           <span>Direct SIP/RTP</span>

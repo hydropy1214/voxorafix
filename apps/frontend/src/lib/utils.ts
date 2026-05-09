@@ -42,25 +42,25 @@ export function formatFileSize(bytes: number): string {
 
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
-    RUNNING: 'text-green-400 bg-green-400/10 border-green-400/20',
-    COMPLETED: 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-    PAUSED: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    FAILED: 'text-red-400 bg-red-400/10 border-red-400/20',
-    CANCELLED: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
-    DRAFT: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
-    SCHEDULED: 'text-purple-400 bg-purple-400/10 border-purple-400/20',
-    REGISTERED: 'text-green-400 bg-green-400/10 border-green-400/20',
-    UNREGISTERED: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
-    TESTING: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    READY: 'text-green-400 bg-green-400/10 border-green-400/20',
-    PROCESSING: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    HUMAN: 'text-green-400 bg-green-400/10 border-green-400/20',
-    MACHINE: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
-    ANSWERED: 'text-green-400 bg-green-400/10 border-green-400/20',
-    BUSY: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
-    NOANSWER: 'text-gray-400 bg-gray-400/10 border-gray-400/20',
+    RUNNING:      'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    COMPLETED:    'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+    PAUSED:       'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    FAILED:       'text-red-400 bg-red-500/10 border-red-500/20',
+    CANCELLED:    'text-zinc-400 bg-zinc-500/10 border-zinc-500/20',
+    DRAFT:        'text-zinc-400 bg-zinc-500/10 border-zinc-500/20',
+    SCHEDULED:    'text-violet-400 bg-violet-500/10 border-violet-500/20',
+    REGISTERED:   'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    UNREGISTERED: 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20',
+    TESTING:      'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    READY:        'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    PROCESSING:   'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    HUMAN:        'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    MACHINE:      'text-orange-400 bg-orange-500/10 border-orange-500/20',
+    ANSWERED:     'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+    BUSY:         'text-amber-400 bg-amber-500/10 border-amber-500/20',
+    NOANSWER:     'text-zinc-400 bg-zinc-500/10 border-zinc-500/20',
   }
-  return colors[status] ?? 'text-gray-400 bg-gray-400/10 border-gray-400/20'
+  return colors[status] ?? 'text-zinc-400 bg-zinc-500/10 border-zinc-500/20'
 }
 
 export function getMosColor(mos: number): string {

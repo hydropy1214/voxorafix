@@ -70,7 +70,7 @@ export function Sidebar() {
 
       {/* Logo */}
       <div className="h-16 flex items-center gap-3 px-5 border-b border-border flex-shrink-0">
-        <div className="h-8 w-8 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow-brand">
+        <div className="h-8 w-8 rounded-xl gradient-brand flex items-center justify-center flex-shrink-0 shadow-glow-violet">
           <Waves className="h-4 w-4 text-white" />
         </div>
         <div>

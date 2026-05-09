@@ -294,10 +294,10 @@ export default function LiveMonitorPage() {
               {/* System status */}
               <div className="grid grid-cols-2 gap-2">
                 {[
-                  { label: 'FreeSWITCH ESL', ok: stats?.freeswitchConnected, desc: 'port 8021' },
-                  { label: 'Kamailio SIP', ok: true, desc: 'port 5060 UDP/TCP' },
-                  { label: 'WebSocket', ok: connected, desc: 'Socket.io' },
-                  { label: 'Vonage Provider', ok: true, desc: 'SIP registered' },
+                  { label: 'Call Engine', ok: stats?.freeswitchConnected, desc: 'Connected' },
+                  { label: 'SIP Gateway', ok: true, desc: 'UDP/TCP active' },
+                  { label: 'Live Events', ok: connected, desc: 'WebSocket' },
+                  { label: 'Phone Account', ok: true, desc: 'Registered' },
                 ].map(s => (
                   <div key={s.label} className={cn(
                     'p-3 rounded-xl border',

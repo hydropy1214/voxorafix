@@ -16,12 +16,12 @@ interface StatsCardProps {
 }
 
 const colorConfig = {
-  brand:  { bg: 'bg-brand-500/10',  icon: 'text-brand-400',  border: 'border-brand-500/20',  glow: 'shadow-glow-brand/20' },
-  blue:   { bg: 'bg-blue-500/10',   icon: 'text-blue-400',   border: 'border-blue-500/20',   glow: '' },
-  green:  { bg: 'bg-green-500/10',  icon: 'text-green-400',  border: 'border-green-500/20',  glow: 'shadow-glow-green/20' },
-  purple: { bg: 'bg-purple-500/10', icon: 'text-purple-400', border: 'border-purple-500/20', glow: '' },
-  yellow: { bg: 'bg-yellow-500/10', icon: 'text-yellow-400', border: 'border-yellow-500/20', glow: '' },
-  red:    { bg: 'bg-red-500/10',    icon: 'text-red-400',    border: 'border-red-500/20',    glow: 'shadow-glow-red/20' },
+  brand:  { bg: 'bg-violet-500/10', icon: 'text-violet-400', border: 'border-violet-500/20', glow: 'shadow-glow-violet' },
+  blue:   { bg: 'bg-cyan-500/10',   icon: 'text-cyan-400',   border: 'border-cyan-500/20',   glow: '' },
+  green:  { bg: 'bg-emerald-500/10',icon: 'text-emerald-400',border: 'border-emerald-500/20',glow: 'shadow-glow-green' },
+  purple: { bg: 'bg-violet-500/10', icon: 'text-violet-400', border: 'border-violet-500/20', glow: '' },
+  yellow: { bg: 'bg-amber-500/10',  icon: 'text-amber-400',  border: 'border-amber-500/20',  glow: '' },
+  red:    { bg: 'bg-red-500/10',    icon: 'text-red-400',    border: 'border-red-500/20',    glow: 'shadow-glow-red' },
   orange: { bg: 'bg-orange-500/10', icon: 'text-orange-400', border: 'border-orange-500/20', glow: '' },
 }
 

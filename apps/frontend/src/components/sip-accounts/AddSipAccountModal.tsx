@@ -81,7 +81,7 @@ export function AddSipAccountModal({ onClose }: { onClose: () => void }) {
           {/* Account name */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Account Name *</label>
-            <input {...register('name')} placeholder="My Vonage Account" className="input-field" />
+            <input {...register('name')} placeholder="e.g. US Sales Line, Support Account" className="input-field" />
             {errors.name && <p className="text-red-400 text-xs">{errors.name.message}</p>}
           </div>
 

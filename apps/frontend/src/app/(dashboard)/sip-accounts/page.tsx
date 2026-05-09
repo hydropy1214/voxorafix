@@ -59,7 +59,7 @@ export default function SipAccountsPage() {
         <div>
           <p className="text-sm font-medium text-brand-200">Direct SIP Protocol</p>
           <p className="text-xs text-brand-300/70 mt-0.5">
-            Connect any SIP provider (UDP, TCP, TLS). Voxora routes calls through FreeSWITCH — no telecom APIs needed.
+            Connect any SIP-compatible phone service using standard credentials. Voxora handles all the call routing — no third-party APIs required.
           </p>
         </div>
       </div>
