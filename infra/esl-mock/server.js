@@ -45,12 +45,13 @@ function sendApiResponse(socket, body) {
 }
 
 // ESL text/event-plain: outer headers + body (which contains event key:value pairs)
+// CRITICAL: modesl's _parsePlainBody calls txt.indexOf('\n\n') so the body MUST end with \n\n
 function sendEventPlain(socket, eventObj) {
-  // Build body from event key:value pairs, terminated by \n
   const bodyLines = Object.entries(eventObj)
     .map(([k, v]) => `${k}: ${String(v).replace(/\n/g, ' ')}`)
     .join('\n')
-  const body = bodyLines + '\n'
+  // Body must end with \n\n so modesl can find the header boundary
+  const body = bodyLines + '\n\n'
   const buf = Buffer.from(body, 'utf8')
   writeRaw(socket, `Content-Type: text/event-plain\nContent-Length: ${buf.length}\n\n`)
   writeRaw(socket, buf)

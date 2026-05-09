@@ -67,6 +67,10 @@ export class FreeswitchEslService implements OnModuleInit, OnModuleDestroy {
           this.handleEvent('CHANNEL_HANGUP_COMPLETE', evt);
         });
 
+        this.connection.on('esl::event::CHANNEL_HANGUP::**', (evt: any) => {
+          this.handleEvent('CHANNEL_HANGUP_COMPLETE', evt);
+        });
+
         this.connection.on('esl::event::CUSTOM::**', (evt: any) => {
           const subclass = evt.getHeader('Event-Subclass');
           if (subclass?.startsWith('voxora::')) {
