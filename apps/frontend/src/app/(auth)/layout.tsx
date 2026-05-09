@@ -1,5 +1,10 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Waves, Phone, Activity, Shield, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { useAuthStore } from '@/store/auth.store'
 
 const FEATURES = [
   { icon: Phone, label: 'Direct SIP Protocol', desc: 'No API middlemen — pure SIP/RTP' },
@@ -16,6 +21,17 @@ const STATS = [
 ]
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const token = useAuthStore(s => s.accessToken)
+  const hasHydrated = useAuthStore(s => s._hasHydrated)
+
+  // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    if (hasHydrated && token) {
+      router.replace('/dashboard')
+    }
+  }, [token, hasHydrated, router])
+
   return (
     <div className="min-h-screen bg-background flex overflow-hidden">
       {/* Left panel — branding */}

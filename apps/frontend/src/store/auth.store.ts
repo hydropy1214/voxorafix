@@ -16,9 +16,11 @@ interface AuthState {
   accessToken: string | null
   refreshToken: string | null
   user: User | null
+  _hasHydrated: boolean
   setAuth: (accessToken: string, refreshToken: string, user: User) => void
   updateUser: (user: Partial<User>) => void
   logout: () => void
+  setHasHydrated: (state: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -27,6 +29,7 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       user: null,
+      _hasHydrated: false,
 
       setAuth: (accessToken, refreshToken, user) =>
         set({ accessToken, refreshToken, user }),
@@ -37,6 +40,8 @@ export const useAuthStore = create<AuthState>()(
         })),
 
       logout: () => set({ accessToken: null, refreshToken: null, user: null }),
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'voxora-auth',
@@ -45,6 +50,9 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         user: state.user,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     },
   ),
 )

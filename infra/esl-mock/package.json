@@ -1,0 +1,9 @@
+{
+  "name": "esl-mock",
+  "version": "1.0.0",
+  "description": "FreeSWITCH ESL Mock Server for development",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
