@@ -17,7 +17,7 @@ export default function AudioFilesPage() {
   const { data: files = [], isLoading } = useQuery({
     queryKey: ['audio-files'],
     queryFn: () => api.get('/audio-files').then(r => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 60000,
   })
 
   const uploadMutation = useMutation({

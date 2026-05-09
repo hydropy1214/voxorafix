@@ -38,7 +38,7 @@ export default function LiveMonitorPage() {
   const { data: stats } = useQuery({
     queryKey: ['live-monitor', 'stats'],
     queryFn: () => api.get('/live-monitor/stats').then(r => r.data),
-    refetchInterval: 3000,
+    refetchInterval: 30000,
   })
 
   const { liveStats, events: rawEvents, connected } = useLiveStats()

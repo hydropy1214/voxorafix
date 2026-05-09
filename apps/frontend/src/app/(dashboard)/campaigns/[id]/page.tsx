@@ -54,7 +54,7 @@ export default function CampaignDetailPage() {
   const { data: campaign, isLoading } = useQuery({
     queryKey: ['campaign', campaignId],
     queryFn: () => api.get(`/campaigns/${campaignId}`).then(r => r.data),
-    refetchInterval: 5000,
+    refetchInterval: 15000,
   })
 
   const startMutation = useMutation({

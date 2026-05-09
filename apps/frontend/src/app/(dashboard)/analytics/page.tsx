@@ -34,7 +34,7 @@ export default function AnalyticsPage() {
   const { data: dashboard } = useQuery({
     queryKey: ['analytics', 'dashboard'],
     queryFn: () => api.get('/analytics/dashboard').then(r => r.data),
-    refetchInterval: 60000,
+    refetchInterval: 120000,
   })
 
   const { data: timeline = [] } = useQuery({

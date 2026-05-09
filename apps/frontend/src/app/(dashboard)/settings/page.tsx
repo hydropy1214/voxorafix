@@ -6,8 +6,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   User, Lock, Bell, Key, Users, Webhook,
   Loader2, Save, Camera, Plus, Trash2, Eye, EyeOff,
-  Copy, CheckCircle2, AlertCircle, RefreshCw,
+  Copy, CheckCircle2, AlertCircle, RefreshCw, AlertTriangle,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/auth.store'
 import { toast } from 'sonner'
@@ -26,9 +27,93 @@ const TABS = [
   { id: 'api', label: 'API Keys', icon: Key },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook },
   { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'danger', label: 'Danger Zone', icon: AlertCircle },
 ] as const
 
 type TabId = typeof TABS[number]['id']
+
+function DangerZoneTab() {
+  const [confirmText, setConfirmText] = useState('')
+  const [showConfirm, setShowConfirm] = useState(false)
+  const logout = useAuthStore(s => s.logout)
+  const router = useRouter()
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => api.delete('/users/account'),
+    onSuccess: () => {
+      logout()
+      router.push('/')
+      toast.success('Account deleted')
+    },
+    onError: (e: any) => toast.error(e.response?.data?.message || 'Failed to delete account'),
+  })
+
+  return (
+    <div className="space-y-5 animate-fade-in">
+      {/* Export data */}
+      <div className="stat-card">
+        <h3 className="font-semibold text-sm mb-1">Export your data</h3>
+        <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+          Download a full export of your account data — campaigns, contacts, call logs, and settings — as a CSV archive.
+        </p>
+        <button onClick={() => toast.info('Data export is being prepared. You will receive an email when it is ready.')}
+          className="btn-secondary text-sm flex items-center gap-2">
+          <Save className="h-4 w-4" />
+          Export all data
+        </button>
+      </div>
+
+      {/* Delete account */}
+      <div className="rounded-2xl border border-red-500/25 bg-red-500/[0.04] p-6">
+        <div className="flex items-start gap-3 mb-4">
+          <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-sm text-red-300">Delete account</h3>
+            <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+              Permanently delete your account and all associated data — campaigns, contacts, call logs, recordings, and settings.
+              This action cannot be undone.
+            </p>
+          </div>
+        </div>
+
+        {!showConfirm ? (
+          <button onClick={() => setShowConfirm(true)}
+            className="btn-danger flex items-center gap-2 text-sm">
+            <Trash2 className="h-4 w-4" />
+            Delete my account
+          </button>
+        ) : (
+          <div className="space-y-3 p-4 bg-red-500/[0.06] border border-red-500/20 rounded-xl">
+            <p className="text-sm font-medium text-red-300">
+              Type <span className="font-mono bg-red-500/15 px-1.5 py-0.5 rounded">delete my account</span> to confirm
+            </p>
+            <input
+              value={confirmText}
+              onChange={e => setConfirmText(e.target.value)}
+              placeholder="delete my account"
+              className="input-field border-red-500/25 focus:ring-red-500/50"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => deleteAccountMutation.mutate()}
+                disabled={confirmText !== 'delete my account' || deleteAccountMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleteAccountMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                Yes, permanently delete
+              </button>
+              <button onClick={() => { setShowConfirm(false); setConfirmText('') }}
+                className="btn-secondary text-sm px-4">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function ApiKeysTab() {
   const qc = useQueryClient()
@@ -394,6 +479,8 @@ export default function SettingsPage() {
 
       {tab === 'api' && <ApiKeysTab />}
       {tab === 'webhooks' && <WebhooksTab />}
+
+      {tab === 'danger' && <DangerZoneTab />}
 
       {tab === 'notifications' && (
         <div className="stat-card space-y-5 animate-fade-in">

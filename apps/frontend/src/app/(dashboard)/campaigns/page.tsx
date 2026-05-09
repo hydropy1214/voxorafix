@@ -13,12 +13,13 @@ import { CampaignWizard } from '@/components/campaigns/CampaignWizard'
 export default function CampaignsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const qc = useQueryClient()
 
   const { data, isLoading } = useQuery({
     queryKey: ['campaigns'],
     queryFn: () => api.get('/campaigns').then(r => r.data),
-    refetchInterval: 10000,
+    refetchInterval: 20000,
   })
 
   const startMutation = useMutation({
@@ -41,7 +42,8 @@ export default function CampaignsPage() {
 
   const campaigns = data?.data ?? []
   const filtered = campaigns.filter((c: any) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+    c.name.toLowerCase().includes(search.toLowerCase()) &&
+    (statusFilter === 'ALL' || c.status === statusFilter),
   )
 
   return (
@@ -60,17 +62,29 @@ export default function CampaignsPage() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-3">
-        <div className="relative max-w-sm">
+      {/* Search + Filter */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search campaigns..."
-            className="input-field pl-10 w-64"
+            className="input-field pl-10 w-56"
           />
         </div>
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="input-field w-36 text-sm"
+        >
+          <option value="ALL">All status</option>
+          <option value="DRAFT">Draft</option>
+          <option value="RUNNING">Running</option>
+          <option value="PAUSED">Paused</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
         {campaigns.length > 0 && (
           <span className="text-xs text-muted-foreground">
             {filtered.length} of {campaigns.length} campaigns

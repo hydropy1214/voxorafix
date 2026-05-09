@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const { data: timelineData } = useQuery({
     queryKey: ['analytics', 'timeline'],
     queryFn: () => api.get('/analytics/timeline?days=14').then(r => r.data),
-    refetchInterval: 60000,
+    refetchInterval: 120000,
   })
   const { data: sipAccounts = [] } = useQuery({
     queryKey: ['sip-accounts'],

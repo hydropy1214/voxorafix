@@ -5,39 +5,32 @@ import { Toaster } from 'sonner'
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth.store'
 
-function HydrationGate({ children }: { children: React.ReactNode }) {
-  const [isMounted, setIsMounted] = useState(false)
-
+function AuthHydrationInit() {
   useEffect(() => {
-    // Trigger Zustand persist rehydration on mount
+    // Trigger Zustand persist rehydration once on mount
     useAuthStore.persist.rehydrate()
-    setIsMounted(true)
   }, [])
-
-  // During SSR and before hydration, render a transparent wrapper
-  // to avoid mismatches. Children still render but auth state is pending.
-  return <>{children}</>
+  return null
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 30 * 1000,
-            retry: 1,
-            refetchOnWindowFocus: false,
-          },
-        },
-      }),
-  )
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60_000,          // Cache data for 60s before considering stale
+        gcTime: 300_000,            // Keep unused data in cache for 5 minutes
+        retry: 1,
+        retryDelay: 1000,
+        refetchOnWindowFocus: false, // Don't refetch on tab switch — reduces server load
+        refetchOnReconnect: true,
+      },
+    },
+  }))
 
   return (
     <QueryClientProvider client={queryClient}>
-      <HydrationGate>
-        {children}
-      </HydrationGate>
+      <AuthHydrationInit />
+      {children}
       <Toaster
         theme="dark"
         position="top-right"
@@ -45,10 +38,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
         closeButton
         toastOptions={{
           duration: 4000,
-          classNames: {
-            toast: 'bg-card border border-border text-foreground shadow-dropdown',
-            title: 'text-foreground font-semibold text-sm',
-            description: 'text-muted-foreground text-xs',
+          style: {
+            background: 'hsl(234 28% 9%)',
+            border: '1px solid hsl(234 22% 16%)',
+            color: 'hsl(220 20% 94%)',
           },
         }}
       />
