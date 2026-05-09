@@ -3,6 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateSipAccountDto } from './dto/create-sip-account.dto';
 import { UpdateSipAccountDto } from './dto/update-sip-account.dto';
 import * as bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 @Injectable()
 export class SipAccountsService {
@@ -10,7 +13,7 @@ export class SipAccountsService {
 
   async create(userId: string, dto: CreateSipAccountDto) {
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    return this.prisma.sipAccount.create({
+    const account = await this.prisma.sipAccount.create({
       data: {
         userId,
         name: dto.name,
@@ -28,6 +31,15 @@ export class SipAccountsService {
         callsPerSecond: dto.callsPerSecond ?? 1.0,
       },
     });
+    // Persist plain-text password securely for SIP test service
+    try {
+      fs.writeFileSync(
+        path.join(os.tmpdir(), `sip-pw-${account.id}`),
+        dto.password,
+        { mode: 0o600 },
+      );
+    } catch (_) {}
+    return account;
   }
 
   async findAll(userId: string) {
