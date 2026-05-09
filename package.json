@@ -4,16 +4,19 @@
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
+    "dev": "concurrently -n api,web -c green,magenta \"npm run dev -w @voxora/backend\" \"npm run dev -w @voxora/frontend\"",
+    "dev:full": "concurrently -n esl,api,web -c cyan,green,magenta \"node infra/esl-mock/server.js\" \"npm run dev -w @voxora/backend\" \"npm run dev -w @voxora/frontend\"",
+    "dev:backend": "npm run dev -w @voxora/backend",
+    "dev:frontend": "npm run dev -w @voxora/frontend",
+    "dev:esl": "node infra/esl-mock/server.js",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build",
     "prisma:migrate": "npm run prisma:migrate --workspace=apps/backend",
-    "prisma:generate": "npm run prisma:generate --workspace=apps/backend"
+    "prisma:generate": "npm run prisma:generate --workspace=apps/backend",
+    "bootstrap:ubuntu": "bash scripts/ubuntu-bootstrap.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

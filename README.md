@@ -9,7 +9,7 @@
 
 ## Overview
 
-Voxora is a production-ready, multi-tenant SaaS platform for outbound voice broadcasting using direct SIP protocol via FreeSWITCH + Kamailio. No Twilio, Plivo, or any telecom APIs.
+Voxora is a multi-tenant SaaS platform for outbound voice broadcasting. Bring your own SIP provider; campaigns, contacts, analytics, and realtime monitoring run in this stack.
 
 ### Key Features
 
@@ -125,75 +125,164 @@ voxora/
 
 ---
 
-## Quick Start
+## Setup on Ubuntu (native — recommended for day-to-day dev)
+
+These steps target **Ubuntu 22.04 / 24.04 LTS**. You run PostgreSQL and Redis on the host, Node.js for the API and UI, and the included **ESL mock** so the backend can connect to a dialer command channel without installing full telephony binaries.
+
+### 1. System packages
+
+```bash
+sudo apt update
+sudo apt install -y curl git build-essential postgresql postgresql-contrib redis-server
+```
+
+### 2. Node.js 20.x
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v   # should be v20+
+```
+
+### 3. PostgreSQL database and user
+
+```bash
+sudo -u postgres psql -v ON_ERROR_STOP=1 <<'SQL'
+CREATE USER voxora WITH PASSWORD 'voxora_pass';
+CREATE DATABASE voxora_db OWNER voxora;
+GRANT ALL PRIVILEGES ON DATABASE voxora_db TO voxora;
+\c voxora_db
+GRANT ALL ON SCHEMA public TO voxora;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO voxora;
+SQL
+```
+
+Adjust the password in both PostgreSQL and `apps/backend/.env` if you change `voxora_pass`.
+
+If `CREATE USER` or `CREATE DATABASE` fails because they already exist, keep your existing cluster and only ensure `GRANT ALL ON SCHEMA public TO voxora;` was applied inside `voxora_db`.
+
+### 4. Redis
+
+The default Ubuntu Redis package listens on `127.0.0.1:6379` with **no password**, which matches `apps/backend/.env.example` (`REDIS_PASSWORD` empty).
+
+```bash
+sudo systemctl enable --now redis-server
+redis-cli ping   # PONG
+```
+
+### 5. Clone and install JS dependencies
+
+```bash
+git clone <your-repo-url> voxora
+cd voxora
+npm install
+```
+
+### 6. Environment files
+
+```bash
+cp apps/backend/.env.example apps/backend/.env
+cp apps/frontend/.env.example apps/frontend/.env.local
+```
+
+Edit `apps/backend/.env` and set **`JWT_SECRET`** and **`JWT_REFRESH_SECRET`** to long random strings (32+ characters).
+
+**Important:** `apps/frontend/.env.local` must use **`http://localhost:3001`** for **`NEXT_PUBLIC_API_URL`** and **`NEXT_PUBLIC_WS_URL`** when the API runs locally. If these point at an old tunnel URL, the UI on `http://localhost:3000` will load but login and data will fail.
+
+### 7. Database schema and demo user
+
+From the repo root:
+
+```bash
+chmod +x scripts/ubuntu-bootstrap.sh   # once
+npm run bootstrap:ubuntu
+```
+
+Or manually:
+
+```bash
+npm run prisma:generate
+cd apps/backend && npx prisma db push && npm run prisma:seed && cd ../..
+```
+
+`prisma db push` syncs the schema without requiring Prisma’s shadow database (which needs `CREATEDB` on some Postgres installs). For production, prefer versioned migrations (`prisma migrate deploy`) once you maintain a migration history.
+
+### 8. Run the stack
+
+**Option A — one terminal (ESL mock + API + Next.js):**
+
+```bash
+npm run dev:full
+```
+
+**Option B — separate terminals:**
+
+```bash
+npm run dev:esl          # Terminal 1 — ESL mock on port 8021
+npm run dev:backend      # Terminal 2 — NestJS on port 3001
+npm run dev:frontend     # Terminal 3 — Next.js on port 3000
+```
+
+The frontend dev server listens on **`0.0.0.0:3000`** so SSH port forwarding and remote IDEs can expose it reliably.
+
+### 9. Open the app
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:3001/api |
+| Health | http://localhost:3001/health |
+| Swagger | http://localhost:3001/api/docs |
+
+**Demo login:** `demo@voxora.io` / `demo123456` (created by `prisma/seed.ts`).
+
+---
+
+## Quick Start with Docker Compose
 
 ### Prerequisites
 
-- Docker + Docker Compose v2
-- Node.js 20+ (for local development)
+- Docker Engine + Docker Compose v2
 
-### 1. Clone and configure
+### 1. Configure
 
 ```bash
-git clone https://github.com/your-org/voxora.git
-cd voxora
 cp .env.example .env
-# Edit .env with your settings
+# Point DATABASE_URL / REDIS_* at compose service names when running everything in Docker
 ```
 
-### 2. Start with Docker
+### 2. Start services
 
 ```bash
-# Production (full stack)
 docker compose up -d
-
-# Development (no telephony services)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-
-# View logs
-docker compose logs -f backend
-docker compose logs -f frontend
+# Optional: docker-compose.dev.yml for lighter dev stacks
 ```
 
-### 3. Initialize database
+### 3. Migrations and seed
 
 ```bash
 docker compose exec backend npx prisma migrate deploy
 docker compose exec backend npm run prisma:seed
 ```
 
-### 4. Access the application
+### 4. URLs
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:3001 |
-| API Docs | http://localhost:3001/api/docs |
-
-Demo credentials: `demo@voxora.io` / `demo123456`
+Same table as above (`localhost:3000` / `3001` depending on published ports).
 
 ---
 
-## Local Development
+## Local development (reference)
 
 ```bash
-# Install dependencies
 npm install
-
-# Start PostgreSQL + Redis only
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up postgres redis -d
-
-# Generate Prisma client
 npm run prisma:generate
+cd apps/backend && npx prisma db push && cd ../..
 
-# Run migrations
-npm run prisma:migrate
+# API + web (run ESL mock separately if you need dial simulation):
+npm run dev
 
-# Start backend
-npm run dev:backend
-
-# Start frontend (in another terminal)
-npm run dev:frontend
+# ESL mock + API + web together:
+npm run dev:full
 ```
 
 ---
@@ -217,7 +306,7 @@ STRIPE_SECRET_KEY=sk_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-See `.env.example` for full configuration reference.
+See **`.env.example`** (compose-oriented) and **`apps/backend/.env.example`** / **`apps/frontend/.env.example`** for native Ubuntu development.
 
 ---
 
@@ -296,7 +385,7 @@ socket.on('campaign:completed', (data) => { ... })
 
 | Plan | Concurrent | Monthly |
 |------|-----------|---------|
-| Trial | 2 | Free (14 days) |
+| Trial | 2 | Free (3-day trial in product UI) |
 | Starter | 10 | $49 |
 | Growth | 50 | $149 |
 | Pro | 200 | $399 |
@@ -317,6 +406,34 @@ socket.on('campaign:completed', (data) => { ... })
 docker compose up -d --build
 docker compose exec backend npx prisma migrate deploy
 ```
+
+---
+
+## Troubleshooting
+
+### Frontend loads but login or data fails
+
+- Confirm **`NEXT_PUBLIC_API_URL`** and **`NEXT_PUBLIC_WS_URL`** in **`apps/frontend/.env.local`** are **`http://localhost:3001`** when developing locally.
+- Restart **`npm run dev:frontend`** after changing env files.
+
+### `localhost:3000` refused in browser
+
+- Ensure **`npm run dev:frontend`** or **`npm run dev:full`** is running.
+- On a **remote VM / SSH**, open the forwarded URL from your editor’s **Ports** panel; your laptop’s `localhost` is not the server’s unless ports are forwarded.
+
+### Backend cannot connect to ESL / FreeSWITCH
+
+- Run **`npm run dev:esl`** or **`npm run dev:full`** so **`infra/esl-mock/server.js`** listens on **`8021`** with password **`ClueCon`** (defaults in `.env.example`).
+- Check **`GET http://localhost:3001/health`** — `freeswitch` should report **`connected`** when the mock is up.
+
+### Prisma migrate dev fails on “shadow database”
+
+- Use **`npx prisma db push`** inside **`apps/backend`** for local iteration (see Ubuntu steps), or grant the Postgres user **`CREATEDB`** for shadow DB creation.
+
+### PostgreSQL connection refused
+
+- **`sudo systemctl start postgresql`**
+- Verify **`DATABASE_URL`** user, password, database name, and port **`5432`**.
 
 ---
 
