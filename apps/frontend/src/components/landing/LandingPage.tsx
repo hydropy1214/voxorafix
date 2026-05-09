@@ -143,7 +143,7 @@ const Hero = memo(function Hero() {
             </a>
           </div>
           <div className="flex flex-wrap items-center gap-5 pt-1">
-            {['14-day free trial', 'No credit card', 'Cancel any time'].map(t => (
+            {['3-day free trial', 'No credit card', 'Cancel any time'].map(t => (
               <div key={t} className="flex items-center gap-1.5 text-xs" style={{ color: 'hsl(224 14% 45%)' }}>
                 <Check className="h-3 w-3 text-emerald-500" />
                 {t}
@@ -313,7 +313,7 @@ const HowItWorks = memo(function HowItWorks() {
             Start free today
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <p className="text-xs mt-3" style={{ color: 'hsl(224 14% 42%)' }}>14-day trial · No credit card · Cancel any time</p>
+          <p className="text-xs mt-3" style={{ color: 'hsl(224 14% 42%)' }}>3-day trial · No credit card · Cancel any time</p>
         </div>
       </div>
     </section>
@@ -599,7 +599,7 @@ const FAQ = memo(function FAQ() {
   const [open, setOpen] = useState<number | null>(null)
   const faqs = [
     { q:'What phone numbers do I need?', a:'You need a phone service that supports SIP — a standard protocol used by virtually every business phone provider. You bring your own numbers and pay your carrier directly. Voxora handles the call automation on top.' },
-    { q:'How does the 14-day free trial work?', a:'You get full access to your chosen plan tier for 14 days with no credit card required. At the end of the trial you can add payment details to continue — or your account pauses automatically with no charge.' },
+    { q:'How does the 3-day free trial work?', a:'You get full access to your chosen plan tier for 3 days with no credit card required. At the end of the trial you can add payment details to continue — or your account pauses automatically with no charge.' },
     { q:'What happens when voicemail answers?', a:'Voxora detects voicemail within 2–3 seconds. You configure what happens: play a different pre-recorded message, drop a voicemail silently and hang up, or skip voicemail contacts entirely. Set per campaign.' },
     { q:'Is this compliant for my country?', a:'Voxora provides timezone-aware calling windows, DNC list management, opt-out key detection, and full audit logs — the foundations for compliant calling. Legal requirements vary by country and industry. Confirm the rules that apply to your situation with a legal professional.' },
     { q:'Can I connect Voxora to my CRM?', a:'Yes. Every call event — answered, human detected, voicemail, keypress, hang up — fires a webhook to any URL you configure. A full REST API gives you programmatic access to contacts, campaigns, and call logs.' },
@@ -674,7 +674,7 @@ const CTA = memo(function CTA() {
           </a>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-6 text-xs" style={{ color: 'hsl(263 15% 55%)' }}>
-          {['14-day free trial', 'No credit card', '30-minute setup', 'Cancel any time'].map(t => (
+          {['3-day free trial', 'No credit card', '30-minute setup', 'Cancel any time'].map(t => (
             <div key={t} className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
               {t}

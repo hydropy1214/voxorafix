@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 import { SocketProvider } from '@/components/providers/SocketProvider'
+import { WebDialer } from '@/components/dialer/WebDialer'
 import { Waves } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </main>
         </div>
       </div>
+      <WebDialer />
     </SocketProvider>
   )
 }

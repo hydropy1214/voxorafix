@@ -40,7 +40,7 @@ function getPasswordStrength(password: string) {
 }
 
 const PERKS = [
-  '14-day free trial — no credit card',
+  '3-day free trial — no credit card',
   'Direct SIP, any provider',
   'Real-time AMD detection',
   'Unlimited contacts on Pro',
@@ -79,7 +79,7 @@ export default function SignupPage() {
       <div className="mb-6">
         <h2 className="text-2xl font-bold tracking-tight">Create your account</h2>
         <p className="text-muted-foreground text-sm mt-1.5">
-          Start your 14-day free trial — no credit card required
+          Start your 3-day free trial — no credit card required
         </p>
       </div>
 
